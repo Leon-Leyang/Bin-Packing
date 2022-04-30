@@ -102,7 +102,7 @@ int main(int argc, char* argv[]){
     // Load the problems
     vector<Problem> problems = ioManager.loadProblems();
 
-    
+
 }
 
 
@@ -181,7 +181,7 @@ vector<Problem> IOManager::loadProblems(){
 
     while(getline(file, line)){
         // If the problem id is read
-        if(line.find("u") != string::npos){
+        if(line.find("u") != string::npos || line.find("HARD") != string::npos){
 
             // Remove blank space in the problem id
             line.erase(remove(line.begin(), line.end(),' '), line.end());
@@ -227,6 +227,8 @@ vector<Problem> IOManager::loadProblems(){
     file.close();
 
     if(problems.size() != problemNum){
+        cout << "The number of problems declared: " << problemNum << endl;
+        cout << "The real number of problems: " << problems.size() << endl;
         cout << "The number of problems declared doesn't match the real number of problems" << endl;
         exit(1);
     }
