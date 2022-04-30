@@ -9,6 +9,29 @@ using namespace std;
 
 // Declaration of the classes used in main funciton
 
+class Item{
+private: 
+    int id;
+    int vol;
+};
+
+
+class Bin{
+private:
+    vector<Item> items;
+    int capLeft;
+    int cap;
+};
+
+
+class Solution{
+private:
+    vector<Bin> bins;
+    int binNum;
+    int obj;
+};
+
+
 // Class of a problem instance
 class Problem{
 private:
@@ -16,7 +39,6 @@ private:
     int itemNum;
     int binNum;
 };
-
 
 // Class used to manage io related operations
 class IOManager{
@@ -28,6 +50,7 @@ public:
     static vector<Problem> loadProblem();
     
 };
+
 
 
 
@@ -69,37 +92,3 @@ vector<Problem> IOManager::loadProblem(){
 
 
 
-
-
-
-
-// class Problem{
-// private:
-//     int id;
-//     int itemNum;
-//     int binNum;
-// };
-
-
-
-// class Solution{
-// private:
-//     vector<Bin> bins;
-//     int binNum;
-//     int obj;
-// };
-
-
-// class Bin{
-// private:
-//     vector<Item> items;
-//     int capLeft;
-//     int cap;
-// };
-
-
-// class Item{
-// private: 
-//     int id;
-//     int vol;
-// };
