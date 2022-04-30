@@ -9,13 +9,14 @@ using namespace std;
 
 // Declaration of the classes used in main funciton
 
+// Class for item
 class Item{
 private: 
     int id;
     int vol;
 };
 
-
+// Class for bin
 class Bin{
 private:
     vector<Item> items;
@@ -23,7 +24,7 @@ private:
     int cap;
 };
 
-
+// Class for solution
 class Solution{
 private:
     vector<Bin> bins;
@@ -32,7 +33,7 @@ private:
 };
 
 
-// Class of a problem instance
+// Class for problem
 class Problem{
 private:
     int id;
@@ -40,17 +41,26 @@ private:
     int binNum;
 };
 
-// Class used to manage io related operations
+// Class managing io related operations
 class IOManager{
 public:
-    // Function to get command line arguments
-    static char* getCmdArg(char ** begin, char ** end, const string & arg);
+    // Constructor
+    IOManager(int argc, char* argv[]);
 
-    // Function to load problem from the given file and initialize
-    static vector<Problem> loadProblem();
+    // Function to load problems from the data file
+    vector<Problem> loadProblem();
     
-};
+    // Getter for maximum time
+    int getMaxTime();
+    
+private:
+    char* dataFile;
+    char* solutionFile;
+    int maxTime;
 
+    // Function to read command line argument
+    char* getCmdArg(char ** begin, char ** end, const string & arg);
+};
 
 
 
@@ -60,17 +70,38 @@ public:
 // Main function
 int main(int argc, char* argv[]){
 
-    char* dataFile = IOManager::getCmdArg(argv, argv + argc, "-s");
-    char* solutionFile = IOManager::getCmdArg(argv, argv + argc, "-o");
-    int maxTime = atoi(IOManager::getCmdArg(argv, argv + argc, "-t"));
+    IOManager ioManager = IOManager(argc, argv);
 
-    cout << "Data: " << dataFile << endl;
-    cout << "Solution: " << solutionFile << endl;
+    int maxTime = ioManager.getMaxTime();
+
     cout << "Max time: " << maxTime << endl;
 }
 
 
-// Function to get command line arguments
+
+
+
+
+
+// Constructor for IOManager
+IOManager::IOManager(int argc, char* argv[]){
+    dataFile = getCmdArg(argv, argv + argc, "-s");
+    solutionFile = getCmdArg(argv, argv + argc, "-o");
+    maxTime = atoi(getCmdArg(argv, argv + argc, "-t"));
+}
+
+// Function to load problems from the data file
+vector<Problem> IOManager::loadProblem(){
+    vector<Problem> problems;
+    return problems;
+}
+
+// Getter for maximum time
+int IOManager::getMaxTime(){
+    return maxTime;
+}
+
+// Function to read command line argument
 char* IOManager::getCmdArg(char ** begin, char ** end, const string & arg){
         char ** val = find(begin, end, arg);
         if (val != end && ++val != end)
@@ -79,16 +110,3 @@ char* IOManager::getCmdArg(char ** begin, char ** end, const string & arg){
         }
         return 0;
 }
-
-
-// Function to load problem from the given file and initialize
-vector<Problem> IOManager::loadProblem(){
-    vector<Problem> problems;
-    return problems;
-}
-
-
-
-
-
-
