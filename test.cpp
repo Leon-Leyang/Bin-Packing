@@ -19,6 +19,8 @@ using namespace std;
 // };
 
 map<vector<int>, int> findMaxVol(vector<int> items, int cap){
+    // cout << "cap: "<< cap << endl;
+    // cout << "items len: " << items.size() << endl;
     int i;
     for(i = 0; i < items.size(); i++){
         if(items[i] <= cap){
@@ -29,9 +31,9 @@ map<vector<int>, int> findMaxVol(vector<int> items, int cap){
         vector<int> noItem;
         map<vector<int>, int> ret = {{noItem, 0}};
         return ret;
-    }else if(items.size() == 1){
-        vector<int> vec{items[0]};
-        map<vector<int>, int> ret = {{vec, items[0]}};
+    }else if(i == items.size() - 1){
+        vector<int> vec{items[i]};
+        map<vector<int>, int> ret = {{vec, items[i]}};
         return ret;
     }
 
@@ -71,10 +73,16 @@ int main(){
     srand(20);
     // for (int i = 0; i < 10; i++) printf("%d\n", rand()%100+1);   
 
-    vector<int> test{7, 5, 3};
-    map<vector<int>, int> tmap = findMaxVol(test, 8);
+    vector<int> test{11, 6, 5, 4, 1};
+    map<vector<int>, int> tmap = findMaxVol(test, 13);
     auto t = tmap.begin();
-    cout << t->second <<endl;
+    cout << "Max vol: " << t->second <<endl; 
+
+    vector<int> a = t->first;
+
+    for(int i = 0; i<a.size(); i++){
+        cout << a[i] << endl;
+    }
 
     return 0;
 }

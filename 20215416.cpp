@@ -20,6 +20,10 @@ private:
 public:
     // Constructor
     Item(int id, int vol);
+
+    // Getters
+    int getId();
+    int getVol();
 };
 
 // Class for bin
@@ -107,8 +111,8 @@ public:
     // Function to generate solution with MBS heuristic 
     virtual Solution genSolution(const Problem& problem);
 private:
-    // Function to find the maximum packing given a list of unpacked items and a capacity
-    map<vector<Item>, int> findMaxPack(vector<Item> uItems, int cap);
+    // Function to find the maximum packing given a restricted capacity and a vector of unpacked items in a descending order of volumn
+    map<int, vector<Item>> findMaxPack(int cap, vector<Item> uItems);
 };
 
 
@@ -189,6 +193,17 @@ Item::Item(int id, int vol){
     this->id = id;
     this->vol = vol;
 }
+
+// Getters
+int Item::getId(){
+    return id;
+}
+int Item::getVol(){
+    return vol;
+}
+
+
+
 
 // Constructor for Bin
 Bin::Bin(int id, int cap){
@@ -333,15 +348,64 @@ char* IOManager::getCmdArg(char ** begin, char ** end, const string & arg){
 // Function to generate solution with MBS heuristic 
 Solution MBSHeuristic::genSolution(const Problem& problem){
     Solution solution(problem);
+
+
+
+
+
     return solution;
 }
 
 
-// Function to find the maximum packing given a list of unpacked items and a capacity
-map<vector<Item>, int> MBSHeuristic::findMaxPack(vector<Item> uItems, int cap){
-    map<vector<Item>, int> ret;
-    return ret;
+// Function to find the maximum packing given a restricted capacity and a vector of unpacked items in a descending order of volumn
+// Return the map of the total volumn and the items in the packing
+map<int, vector<Item>> MBSHeuristic::findMaxPack(int cap, vector<Item> uItems){
+    int i;
+
+    // Find the index of item with the maximum volumn and is smaller than the capacity
+    for(i = 0; i < uItems.size(); i++){
+        if(uItems[i].getVol() <= cap){
+            break;
+        }
+    }
+
+    // Base case
+    if(i == uItems.size()){ // If there is no such item, return the map of volumn 0 and the vector containing no item
+        vector<Item> retItem;
+        map<int, vector<Item>> ret = {{0, retItem}};
+        return ret;
+    }else if(i == uItems.size() - 1){ // If the item is the last one in the vector, return the map of its volumn and the vector containing it
+        vector<Item> retItem{uItems[i]};
+        map<int, vector<Item>> ret = {{uItems[i].getVol(), retItem}};
+        return ret;
+    }
+
+    // Recursive case
+    // If the current item is chosen
+    map<int, vector<Item>> map1 = findMaxPack(cap - uItems[i].getVol(), vector<Item>(uItems.begin() + 1, uItems.end()));
+    auto it1 = map1.begin();
+    int vol1 = it1->first + uItems[i].getVol();
+    vector<Item> retItems = it1->second;
+    vector<Item> pItems1{uItems[i]};
+    pItems1.insert(pItems1.end(), retItems.begin(), retItems.end());
+    // If the current item is not chosen
+    map<int, vector<Item>> map2 = findMaxPack(cap, vector<Item>(uItems.begin() + 1, uItems.end()));
+    auto it2 = map2.begin();
+    int vol2 = it2->first;
+    vector<Item> pItems2 = it2->second;
+
+    // Return the case with larger total volumn
+    if(vol1 > vol2){
+        map<int, vector<Item>> ret = {{vol1, pItems1}};
+        return ret;
+    }else{
+        map<int, vector<Item>> ret = {{vol2, pItems2}};
+        return ret;
+    }
 }
+
+
+
 
 
 // Constructor and destructor
