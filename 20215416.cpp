@@ -22,8 +22,8 @@ public:
     Item(int id, int vol);
 
     // Getters
-    int getId();
-    int getVol();
+    int getId() const;
+    int getVol() const;
 };
 
 // Class for bin
@@ -195,10 +195,10 @@ Item::Item(int id, int vol){
 }
 
 // Getters
-int Item::getId(){
+int Item::getId() const{
     return id;
 }
-int Item::getVol(){
+int Item::getVol() const{
     return vol;
 }
 
@@ -345,11 +345,25 @@ char* IOManager::getCmdArg(char ** begin, char ** end, const string & arg){
         return 0;
 }
 
+// Function to compare volumns of two items
+// Used to sort the unpacked items
+bool compareItem(Item item1, Item item2){
+    return (item1.getVol() > item2.getVol());
+}
+
 // Function to generate solution with MBS heuristic 
 Solution MBSHeuristic::genSolution(const Problem& problem){
+    // Initialize the solution
     Solution solution(problem);
 
+    // Get the items in the problem
+    vector<Item> items = problem.getItems();
 
+    // Initialize the unpacked items
+    vector<Item> uItems = items;
+
+    // Sort the unpacked items in a descending order of volumn
+    sort(uItems.begin(), uItems.end(), compareItem);
 
 
 
