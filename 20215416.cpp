@@ -24,18 +24,31 @@ public:
     // Getters
     int getId() const;
     int getVol() const;
+
+    // Overload == operator to compare if two items are the same
+    bool operator ==(const Item& item);
 };
 
 // Class for bin
 class Bin{
-private:
-    vector<Item> items;
+private: 
     int capLeft;
     int cap;
     int id;
+    vector<Item> items;
 public:
     // Constructor
     Bin(int id, int cap);
+
+    // Getters and setters
+    int getCapLeft() const;
+    int getCap() const;
+    vector<Item> getItems() const;
+    void setCapLeft(int capLeft);
+    void setCap(int cap);
+    void addItem(Item item);
+
+
 };
 
 // Class for problem
@@ -75,6 +88,12 @@ public:
 
     //Function to calculate the absolute gap between the solution's bin number and optimal
     int getAbsGap();
+
+    // Getters and setters
+    int getBinNum() const;
+    vector<Bin> getBins() const;
+    void setBinNum(int binNum);
+    void setBins(vector<Bin> bins);
 };
 
 // Class managing io related operations
@@ -171,10 +190,12 @@ int main(int argc, char* argv[]){
     vector<Solution> solutions;
 
     // Generate a solution for each problem and push to the solution vector
-    for(int i = 0; i < problems.size(); i++){
-        Solution solution = solver.solve(problems[i]);
-        solutions.push_back(solution);
-    }
+    // for(int i = 0; i < problems.size(); i++){
+    //     Solution solution = solver.solve(problems[i]);
+    //     solutions.push_back(solution);
+    // }
+
+    Solution solution = solver.solve(problems[0]);
 }
 
 
@@ -206,6 +227,10 @@ int Item::getVol() const{
     return vol;
 }
 
+// Overload == operator to compare if two items are the same
+bool Item::operator ==(const Item& item){
+        return (this->id == item.id);
+}
 
 
 
@@ -213,9 +238,29 @@ int Item::getVol() const{
 Bin::Bin(int id, int cap){
     this->id = id;
     this->cap = cap;
+    this->capLeft = cap;
 }
 
 
+// Getters and setters
+int Bin::getCapLeft() const{
+    return capLeft;
+}
+int Bin::getCap() const{
+    return cap;
+}
+vector<Item> Bin::getItems() const{
+    return items;
+}
+void Bin::setCapLeft(int capLeft){
+    this->capLeft = capLeft;
+}
+void Bin::setCap(int cap){
+    this->cap = cap;
+}
+void Bin::addItem(Item item){
+    this->items.push_back(item);
+}
 
 
 
@@ -252,6 +297,20 @@ void Problem::addItem(Item item){
 
 // Constructor for Solution
 Solution::Solution(const Problem& problem): problem(problem){}
+
+// Getters and setters
+int Solution::getBinNum() const{
+    return binNum;
+}
+vector<Bin> Solution::getBins() const{
+    return bins;
+}
+void Solution::setBinNum(int binNum){
+    this->binNum = binNum;
+}
+void Solution::setBins(vector<Bin> bins){
+    this->bins = bins;
+}
 
 //Function to calculate the absolute gap between the solution's bin number and optimal
 int Solution::getAbsGap(){
@@ -357,6 +416,8 @@ bool MBSHeuristic::compareItem(Item item1, Item item2){
 
 // Function to generate solution with MBS heuristic 
 Solution MBSHeuristic::genSolution(const Problem& problem){
+    vector<Bin> bins;
+
     // Initialize the solution
     Solution solution(problem);
 
@@ -369,7 +430,49 @@ Solution MBSHeuristic::genSolution(const Problem& problem){
     // Sort the unpacked items in a descending order of volumn
     sort(uItems.begin(), uItems.end(), compareItem);
 
+    //
+    int binNum = 0;
+    while(uItems.size() > 0){
+        Bin bin(binNum, problem.getBinCap());
+        binNum++;
 
+        map<int, vector<Item>> maxPacking = findMaxPack(bin.getCapLeft(), uItems);
+        auto it = maxPacking.begin();
+        int maxVol = it->first;
+        vector<Item> pItems = it->second;
+        bin.setCapLeft(bin.getCapLeft() - maxVol);
+        for(Item item : pItems){
+            bin.addItem(item);
+
+	        auto it2 = find(uItems.begin(), uItems.end(), item);
+	        int index = it2 - uItems.begin();
+	        uItems.erase(uItems.begin() + index);
+        }
+
+        cout << "cap left: " << bin.getCapLeft() << endl;
+
+        // testing
+        cout << "packed items this round: " << endl;
+        for(Item item : pItems){
+            cout << item.getVol() << ", ";
+        }
+        cout << endl;
+        cout << "unpacked items now: " << endl;
+        for(Item item : uItems){
+            cout << item.getVol() << ", ";
+        }
+        cout << endl;
+
+
+
+
+
+        bins.push_back(bin);
+    }
+
+    solution.setBins(bins);
+    solution.setBinNum(binNum);
+    cout << "gap" << solution.getAbsGap() << endl;
 
     return solution;
 }
