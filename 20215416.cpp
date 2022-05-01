@@ -6,6 +6,7 @@
 #include <fstream>
 #include <sstream>
 #include <map>
+#include <time.h>
 
 using namespace std;
 
@@ -89,6 +90,7 @@ private:
 public:
     // Constructor
     Solution(const Problem& problem);
+    Solution(const Solution &soluton);
 
     //Function to calculate the absolute gap between the solution's bin number and optimal
     int getAbsGap();
@@ -161,18 +163,33 @@ public:
 class Solver{
 public:
     // Constructor and destructor
-    Solver();
+    Solver(int maxTime);
     ~Solver();
 
     // Function to solve a problem
     Solution solve(const Problem& problem);
 private:
+    // Maximum computation time for one run
+    int maxTime;
+
     // Pointer to the heuristic
     Heuristic* heuristic;
 
     // Function to initialize a solution with MBS heuristic
     Solution initSolution(const Problem& problem);
+
+    // Function to carry out Variable Neighbourhood Search(VNS)
+    Solution VNS(Solution initSol);
 };
+
+
+
+
+
+
+
+
+
 
 
 
@@ -196,26 +213,41 @@ int main(int argc, char* argv[]){
     // Initialize an IOManager with the command line arguments
     IOManager ioManager = IOManager(argc, argv);
 
-    int maxTime = ioManager.getMaxTime();
-
     // Load the problems
     vector<Problem> problems = ioManager.loadProblems();
 
     // Initialze a solver
-    Solver solver;
+    int maxTime = ioManager.getMaxTime();
+    Solver solver(maxTime);
 
     // Initialize a vector of solutions
     vector<Solution> solutions;
 
     // Generate a solution for each problem and push to the solution vector
-    for(int i = 0; i < problems.size(); i++){
-        Solution solution = solver.solve(problems[i]);
-        solutions.push_back(solution);
-        cout << "gap: " << solution.getAbsGap() << endl;
-    }
+    // for(int i = 0; i < problems.size(); i++){
+    //     Solution solution = solver.solve(problems[i]);
+    //     solutions.push_back(solution);
+    //     cout << "gap: " << solution.getAbsGap() << endl;
+    // }
 
-    // Solution solution = solver.solve(problems[0]);
+    Solution solution = solver.solve(problems[0]);
 }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 
@@ -315,6 +347,12 @@ void Problem::addItem(Item item){
 
 // Constructor for Solution
 Solution::Solution(const Problem& problem): problem(problem){}
+Solution::Solution(const Solution& solution): problem(solution.problem){
+        binNum = solution.binNum;
+        obj = solution.obj;
+        ufBins = solution.ufBins;
+        fBins = solution.fBins;
+}
 
 // Getters and setters
 int Solution::getBinNum() const{
@@ -619,8 +657,9 @@ Solution BFHeuristic::genSolution(const Problem& problem){
 
 
 // Constructor and destructor
-Solver::Solver(){
+Solver::Solver(int maxTime){
     heuristic = new BFHeuristic();
+    this->maxTime = maxTime;
 }
 Solver::~Solver(){
     delete heuristic;
@@ -628,13 +667,34 @@ Solver::~Solver(){
 
 // Function to solve a problem
 Solution Solver::solve(const Problem& problem){
-    Solution initSol = initSolution(problem);
+    Solution initSol(initSolution(problem));
     
+    Solution bestSol(VNS(initSol));
 
-    return initSol;
+    return bestSol;
 }
 
 // Function to initialize a solution with heuristic
 Solution Solver::initSolution(const Problem& problem){
     return heuristic->genSolution(problem);
+}
+
+// Function to carry out Variable Neighbourhood Search(VNS)
+Solution Solver::VNS(Solution initSol){
+    // Initialize the starting time
+    clock_t start;
+    start = clock();
+
+    // Initialize the current solution and the best solution
+    Solution curSol = initSol;
+    Solution bestSol = initSol;
+
+    // Initialize the neighborhood number
+    int neighborhoodNum = 1;
+
+    while((double(clock() - start)/CLOCKS_PER_SEC) < maxTime){
+        cout << "pass" <<endl;
+    }
+
+    return bestSol;
 }
