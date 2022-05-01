@@ -121,11 +121,19 @@ private:
 class Heuristic{
 public:
     // Pure virtual function that shall be implemented in derived class to generate solution with the heuristic 
-    virtual Solution genSolution(const Problem& problem) = 0;       
+    virtual Solution genSolution(const Problem& problem) = 0;    
+
+    // Function to compare volumns of two items
+    // Used to sort the unpacked items
+    static bool compareItem(Item item1, Item item2);   
 };
 
 // Class for best fit
-
+// class BestFitHeuristic{
+// public:
+//     // Function to generate solution with Best Fit heuristic 
+//     virtual Solution genSolution(const Problem& problem);
+// }
 
 
 // Class for minimum bin slack(MBS) heuristic
@@ -136,10 +144,6 @@ public:
 private:
     // Function to find the maximum packing given a restricted capacity and a vector of unpacked items in a descending order of volumn
     map<int, vector<Item>> findMaxPack(int cap, vector<Item> uItems);
-
-    // Function to compare volumns of two items
-    // Used to sort the unpacked items
-    static bool compareItem(Item item1, Item item2);
 };
 
 
@@ -413,9 +417,21 @@ char* IOManager::getCmdArg(char ** begin, char ** end, const string & arg){
 }
 
 
+// Function to generate solution with Best Fit heuristic 
+// Solution BestFitHeuristic::genSolution(const Problem& problem){
+//     vector<Bin> bins;
+
+// }
+
+
+
+
+
+
+
 // Function to compare volumns of two items
 // Used to sort the unpacked items
-bool MBSHeuristic::compareItem(Item item1, Item item2){
+bool Heuristic::compareItem(Item item1, Item item2){
     return (item1.getVol() > item2.getVol());
 }
 
@@ -434,9 +450,9 @@ Solution MBSHeuristic::genSolution(const Problem& problem){
     vector<Item> uItems = items;
 
     // Sort the unpacked items in a descending order of volumn
-    sort(uItems.begin(), uItems.end(), compareItem);
+    sort(uItems.begin(), uItems.end(), Heuristic::compareItem);
 
-    // 
+    // Pack the items according to MBS until all items are packed
     int binNum = 0;
     while(uItems.size() > 0){
         Bin bin(binNum, problem.getBinCap());
@@ -458,6 +474,7 @@ Solution MBSHeuristic::genSolution(const Problem& problem){
         bins.push_back(bin);
     }
 
+    // Set the solution
     solution.setBins(bins);
     solution.setBinNum(binNum);
     cout << "gap" << solution.getAbsGap() << endl;
