@@ -5,6 +5,7 @@
 #include <algorithm>
 #include <fstream>
 #include <sstream>
+#include <map>
 
 using namespace std;
 
@@ -33,15 +34,6 @@ public:
     Bin(int id, int cap);
 };
 
-// Class for solution
-class Solution{
-private:
-    vector<Bin> bins;
-    int binNum;
-    int obj;
-};
-
-
 // Class for problem
 class Problem{
 private:
@@ -56,14 +48,29 @@ public:
     Problem(string id);
 
     // Getters and Setters
-    int getBinCap();
-    int getItemNum();
-    int getBinNum();
-    vector<Item> getItems();
+    int getBinCap() const;
+    int getItemNum() const;
+    int getBinNum() const;
+    vector<Item> getItems() const;
     void setBinCap(int binCap);
     void setItemNum(int itemNum);
     void setBinNum(int binNum);
     void addItem(Item item);
+};
+
+// Class for solution
+class Solution{
+private:
+    int binNum;
+    int obj;
+    vector<Bin> bins;
+    const Problem& problem;
+public:
+    // Constructor
+    Solution(const Problem& problem);
+
+    //Function to calculate the absolute gap between the solution's bin number and optimal
+    int getAbsGap();
 };
 
 // Class managing io related operations
@@ -87,6 +94,50 @@ private:
     char* getCmdArg(char ** begin, char ** end, const string & arg);
 };
 
+// Interface for heuristic
+class Heuristic{
+public:
+    // Pure virtual function that shall be implemented in derived class to generate solution with the heuristic 
+    virtual Solution genSolution(const Problem& problem) = 0;    
+};
+
+// Class for minimum bin slack(MBS) heuristic
+class MBSHeuristic: public Heuristic{
+public:
+    // Function to generate solution with MBS heuristic 
+    virtual Solution genSolution(const Problem& problem);
+private:
+    // Function to find the maximum packing given a list of unpacked items and a capacity
+    map<vector<Item>, int> findMaxPack(vector<Item> uItems, int cap);
+};
+
+
+// Class solving the problem
+class Solver{
+public:
+    // Constructor and destructor
+    Solver();
+    ~Solver();
+
+    // Function to solve a problem
+    Solution solve(const Problem& problem);
+private:
+    // Pointer to the heuristic
+    Heuristic* heuristic;
+
+    // Function to initialize a solution with MBS heuristic
+    Solution initSolution(const Problem& problem);
+};
+
+
+
+
+
+
+
+
+
+
 
 
 
@@ -94,6 +145,9 @@ private:
 
 // Main function
 int main(int argc, char* argv[]){
+    // Set the random seed
+    srand(20);
+
     // Initialize an IOManager with the command line arguments
     IOManager ioManager = IOManager(argc, argv);
 
@@ -102,8 +156,24 @@ int main(int argc, char* argv[]){
     // Load the problems
     vector<Problem> problems = ioManager.loadProblems();
 
+    // Initialze a solver
+    Solver solver;
 
+    // Initialize a vector of solutions
+    vector<Solution> solutions;
+
+    // Generate a solution for each problem and push to the solution vector
+    for(int i = 0; i < problems.size(); i++){
+        Solution solution = solver.solve(problems[i]);
+        solutions.push_back(solution);
+    }
 }
+
+
+
+
+
+
 
 
 
@@ -129,22 +199,23 @@ Bin::Bin(int id, int cap){
 
 
 
+
 // Constructor for Problem
 Problem::Problem(string id){
     this->id = id;
 }
 
 // Getters and Setters
-int Problem::getBinCap(){
+int Problem::getBinCap() const{
     return binCap;
 }
-int Problem::getItemNum(){
+int Problem::getItemNum() const{
     return itemNum;
 }
-int Problem::getBinNum(){
+int Problem::getBinNum() const{
     return binNum;
 }
-vector<Item> Problem::getItems(){
+vector<Item> Problem::getItems() const{
     return items;
 }
 void Problem::setBinCap(int binCap){
@@ -160,6 +231,13 @@ void Problem::addItem(Item item){
     this->items.push_back(item);
 }
 
+// Constructor for Solution
+Solution::Solution(const Problem& problem): problem(problem){}
+
+//Function to calculate the absolute gap between the solution's bin number and optimal
+int Solution::getAbsGap(){
+    return binNum - problem.getBinNum();
+}
 
 // Constructor for IOManager
 IOManager::IOManager(int argc, char* argv[]){
@@ -226,6 +304,7 @@ vector<Problem> IOManager::loadProblems(){
     // Close the file
     file.close();
 
+    // Checker for correctness of the loading
     if(problems.size() != problemNum){
         cout << "The number of problems declared: " << problemNum << endl;
         cout << "The real number of problems: " << problems.size() << endl;
@@ -251,4 +330,37 @@ char* IOManager::getCmdArg(char ** begin, char ** end, const string & arg){
         return 0;
 }
 
+// Function to generate solution with MBS heuristic 
+Solution MBSHeuristic::genSolution(const Problem& problem){
+    Solution solution(problem);
+    return solution;
+}
 
+
+// Function to find the maximum packing given a list of unpacked items and a capacity
+map<vector<Item>, int> MBSHeuristic::findMaxPack(vector<Item> uItems, int cap){
+    map<vector<Item>, int> ret;
+    return ret;
+}
+
+
+// Constructor and destructor
+Solver::Solver(){
+    heuristic = new MBSHeuristic();
+}
+Solver::~Solver(){
+    delete heuristic;
+}
+
+// Function to solve a problem
+Solution Solver::solve(const Problem& problem){
+    Solution initSol = initSolution(problem);
+    
+
+    return initSol;
+}
+
+// Function to initialize a solution with heuristic
+Solution Solver::initSolution(const Problem& problem){
+    return heuristic->genSolution(problem);
+}
