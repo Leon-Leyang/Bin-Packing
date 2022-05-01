@@ -124,8 +124,12 @@ public:
     virtual Solution genSolution(const Problem& problem) = 0;       
 };
 
+// Class for best fit
+
+
+
 // Class for minimum bin slack(MBS) heuristic
-class MBSHeuristic: public Heuristic{
+class [[deprecated]] MBSHeuristic: public Heuristic{
 public:
     // Function to generate solution with MBS heuristic 
     virtual Solution genSolution(const Problem& problem);
@@ -190,12 +194,12 @@ int main(int argc, char* argv[]){
     vector<Solution> solutions;
 
     // Generate a solution for each problem and push to the solution vector
-    // for(int i = 0; i < problems.size(); i++){
-    //     Solution solution = solver.solve(problems[i]);
-    //     solutions.push_back(solution);
-    // }
+    for(int i = 0; i < problems.size(); i++){
+        Solution solution = solver.solve(problems[i]);
+        solutions.push_back(solution);
+    }
 
-    Solution solution = solver.solve(problems[0]);
+    // Solution solution = solver.solve(problems[0]);
 }
 
 
@@ -408,11 +412,13 @@ char* IOManager::getCmdArg(char ** begin, char ** end, const string & arg){
         return 0;
 }
 
+
 // Function to compare volumns of two items
 // Used to sort the unpacked items
 bool MBSHeuristic::compareItem(Item item1, Item item2){
     return (item1.getVol() > item2.getVol());
 }
+
 
 // Function to generate solution with MBS heuristic 
 Solution MBSHeuristic::genSolution(const Problem& problem){
@@ -430,7 +436,7 @@ Solution MBSHeuristic::genSolution(const Problem& problem){
     // Sort the unpacked items in a descending order of volumn
     sort(uItems.begin(), uItems.end(), compareItem);
 
-    //
+    // 
     int binNum = 0;
     while(uItems.size() > 0){
         Bin bin(binNum, problem.getBinCap());
@@ -448,24 +454,6 @@ Solution MBSHeuristic::genSolution(const Problem& problem){
 	        int index = it2 - uItems.begin();
 	        uItems.erase(uItems.begin() + index);
         }
-
-        cout << "cap left: " << bin.getCapLeft() << endl;
-
-        // testing
-        cout << "packed items this round: " << endl;
-        for(Item item : pItems){
-            cout << item.getVol() << ", ";
-        }
-        cout << endl;
-        cout << "unpacked items now: " << endl;
-        for(Item item : uItems){
-            cout << item.getVol() << ", ";
-        }
-        cout << endl;
-
-
-
-
 
         bins.push_back(bin);
     }
@@ -516,7 +504,7 @@ map<int, vector<Item>> MBSHeuristic::findMaxPack(int cap, vector<Item> uItems){
     vector<Item> pItems2 = it2->second;
 
     // Return the case with larger total volumn
-    if(vol1 > vol2){
+    if(vol1 >= vol2){
         map<int, vector<Item>> ret = {{vol1, pItems1}};
         return ret;
     }else{
