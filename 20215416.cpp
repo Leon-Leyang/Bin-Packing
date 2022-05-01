@@ -102,7 +102,7 @@ private:
 class Heuristic{
 public:
     // Pure virtual function that shall be implemented in derived class to generate solution with the heuristic 
-    virtual Solution genSolution(const Problem& problem) = 0;    
+    virtual Solution genSolution(const Problem& problem) = 0;       
 };
 
 // Class for minimum bin slack(MBS) heuristic
@@ -113,6 +113,10 @@ public:
 private:
     // Function to find the maximum packing given a restricted capacity and a vector of unpacked items in a descending order of volumn
     map<int, vector<Item>> findMaxPack(int cap, vector<Item> uItems);
+
+    // Function to compare volumns of two items
+    // Used to sort the unpacked items
+    static bool compareItem(Item item1, Item item2);
 };
 
 
@@ -347,7 +351,7 @@ char* IOManager::getCmdArg(char ** begin, char ** end, const string & arg){
 
 // Function to compare volumns of two items
 // Used to sort the unpacked items
-bool compareItem(Item item1, Item item2){
+bool MBSHeuristic::compareItem(Item item1, Item item2){
     return (item1.getVol() > item2.getVol());
 }
 
