@@ -199,6 +199,9 @@ private:
     // Funtion to compare two solutions
     bool compareSols(Solution solution1, Solution solution2);
 
+    // Function to compute all possible k combinations of n items
+    string comb(int n, int k);
+
     // Function to search the nth neighborhood of the given solution with best descent and get the local optimal solution
     Solution searchNthNB(Solution solution, int count);
 
@@ -699,6 +702,12 @@ bool Solver::compareSols(Solution solution1, Solution solution2){
     }
 }
 
+string Solver::comb(int n, int k){
+    string bitmask(k, 1); // K leading 1's
+    bitmask.resize(n, 0); // n-k trailing 0's
+    return bitmask;
+}
+
 // Function to search the nth neighborhood of the given solution with best descent and get the local optimal solution
 // Nth neighborhood is generated from (n-1)_swap(swap n items with 1 item)
 Solution Solver::searchNthNB(Solution solution, int n){
@@ -730,7 +739,8 @@ Solution Solver::searchNthNB(Solution solution, int n){
 
         // Select n - 1 items from the bin if it is not 0_swap
         if(n - 1 != 0){
-            // Generate a vector of indexes
+
+            // Generate a vector of indexes of items in the nBin
             vector<int> indexes;
             for(int i = 0; i < items.size(); i++){
                 indexes.push_back(i);
@@ -845,23 +855,20 @@ Solution Solver::shaking(Solution solution){
     vector<Bin> ufBins = solution.getUFBins();
     vector<Bin> fBins = solution.getFBins();
 
-    // Initialize the vectors of fBins indexes and ufBins indexes
+    // Initialize the vectors of fBins indexes
     vector<int> fIndexes;
-    // vector<int> ufIndexes;
     for(int i = 0; i < fBins.size(); i++){
         fIndexes.push_back(i);
     }
-    // for(int i = 0; i < ufBins.size(); i++){
-    //     ufIndexes.push_back(i);
-    // }
 
     bool findTrans = false;
 
-    Bin fBin;
-    Bin ufBin;
-    Item fItem;
 
-    if(fIndexes.size() != 0){
+    if(fIndexes.size() != 0){   // If there are filled bins
+        Bin fBin;
+        Bin ufBin;
+        Item fItem;
+
         do{
             // Get a random filled bin
             // cout << "fIndexes: " << fIndexes.size() << endl;
@@ -905,49 +912,136 @@ Solution Solver::shaking(Solution solution){
             }while(findTrans == false && fItemsIndexes.size() > 0);
 
         }while(findTrans == false && fIndexes.size() > 0);
-    }else{
-        
-    }
 
-    if(findTrans == true){
-        fBin.removeItem(fItem);
-        ufBin.addItem(fItem);
+        if(findTrans == true){
+            fBin.removeItem(fItem);
+            ufBin.addItem(fItem);
 
-        // Erase the fBin from fBins
-        for(int i = 0; i < fBins.size(); i++){
-            if(fBins[i] == fBin){
-                fBins.erase(fBins.begin() + i);
+            // Erase the fBin from fBins
+            for(int i = 0; i < fBins.size(); i++){
+                if(fBins[i] == fBin){
+                    fBins.erase(fBins.begin() + i);
+                }
             }
-        }
 
-        ufBins.push_back(fBin);
+            ufBins.push_back(fBin);
 
-        // Erase the ufBin from ufBins
-        for(int i = 0; i < ufBins.size(); i++){
-            if(ufBins[i] == ufBin){
-                ufBins.erase(ufBins.begin() + i);
+            // Erase the ufBin from ufBins
+            for(int i = 0; i < ufBins.size(); i++){
+                if(ufBins[i] == ufBin){
+                    ufBins.erase(ufBins.begin() + i);
+                }
             }
-        }
 
-        if(ufBin.getCapLeft() == 0){
-            fBins.push_back(ufBin);
+            if(ufBin.getCapLeft() == 0){
+                fBins.push_back(ufBin);
+            }else{
+                ufBins.push_back(ufBin);
+            }
+
+            // cout << "\nShake the solution!" << endl;
+            // cout << "pre obj: " << solution.getObj(); 
+
+            solution.setFBins(fBins);
+            solution.setUFBins(ufBins);
+
+            solution.setObj(eval(solution));
+
+            // cout << "; now obj: " << solution.getObj() << endl;
+
         }else{
-            ufBins.push_back(ufBin);
+            // cout << "\nFail to shake the solution!" << endl;
         }
+    
+    }else{  // If there is no filled bin
 
-        // cout << "\nShake the solution!" << endl;
-        // cout << "pre obj: " << solution.getObj(); 
+        // Get the size of unfilled bins
+        int ufSize = ufBins.size();
+
+        int ufId1, ufId2;
+        Bin ufB1, ufB2;
+        Item b1Item, b2Item;
+
+        do{ 
+            // Generate two indexes for unfilled bins
+            do{
+                ufId1 = rand() % ufSize;
+                ufId2 = rand() % ufSize;
+            }while(ufId1 == ufId2);
+
+            // Get two different unfilled bins
+            ufB1 = ufBins[ufId1];
+            ufB2 = ufBins[ufId2];
+
+            vector<int> b1Indexes;
+
+            // Generate a vector of indexes of items in ufB1
+            for(int i = 0; i < ufB1.getItems().size(); i++){
+                b1Indexes.push_back(i);
+            }
+
+            do{
+                // Get a random item from ufB1
+                int randNum = rand() % b1Indexes.size();
+                int b1ItemIndex = b1Indexes[randNum];
+                b1Item = ufB1.getItems()[b1ItemIndex];
+                b1Indexes.erase(b1Indexes.begin() + randNum);
+
+                vector<int> b2Indexes;
+
+                // Generate a vector of indexes of items in ufB2
+                for(int i = 0; i < ufB2.getItems().size(); i++){
+                    b2Indexes.push_back(i);
+                }
+
+                do{
+                    // Get a random item from ufB2
+                    randNum = rand() % b2Indexes.size();
+                    int b2ItemIndex = b2Indexes[randNum];
+                    b2Item = ufB2.getItems()[b2ItemIndex];
+                    b2Indexes.erase(b2Indexes.begin() + randNum);
+
+                    // If the swap of the two items will not violate both of the bins' capacity
+                    if(b1Item.getVol() - b2Item.getVol() <= ufB2.getCapLeft() && b2Item.getVol() - b1Item.getVol() <= ufB1.getCapLeft()){
+                        findTrans = true;
+                    }
+
+                }while(findTrans == false && b2Indexes.size() > 0);
+
+
+            }while(findTrans == false && b1Indexes.size() > 0);
+        }while(findTrans == false);
+
+        // Remove the two bins from the unfilled bins
+        ufBins.erase(ufBins.begin() + ufId1);
+        ufBins.erase(ufBins.begin() + ufId2);
+
+        // Swap the two items
+        ufB1.removeItem(b1Item);
+        ufB1.addItem(b2Item);
+        ufB2.removeItem(b2Item);
+        ufB2.addItem(b1Item);
+
+        // Put two bins to corresponding bin vectors
+        if(ufB1.getCapLeft() == 0){
+            fBins.push_back(ufB1);
+        }else if(ufB1.getCapLeft() != ufB1.getCap()){
+            ufBins.push_back(ufB1);
+        }
+        if(ufB2.getCapLeft() == 0){
+            fBins.push_back(ufB2);
+        }else if(ufB2.getCapLeft() != ufB2.getCap()){
+            ufBins.push_back(ufB2);
+        }
 
         solution.setFBins(fBins);
         solution.setUFBins(ufBins);
 
         solution.setObj(eval(solution));
 
-        // cout << "; now obj: " << solution.getObj() << endl;
-
-    }else{
-        // cout << "\nFail to shake the solution!" << endl;
     }
+
+    
     
     return solution;
 }
