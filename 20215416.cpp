@@ -208,30 +208,7 @@ private:
 
     // Funtion to shake the solution
     Solution shaking(Solution solution);
-
-    void testSol(Solution initSol);
 };
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 
 
@@ -254,45 +231,49 @@ int main(int argc, char* argv[]){
     vector<Solution> solutions;
 
     // Generate a solution for each problem and push to the solution vector
-    // for(int i = 0; i < problems.size(); i++){
-    //     Solution solution = solver.solve(problems[i]);
-    //     solutions.push_back(solution);
-    //     cout << "gap: " << solution.getAbsGap() << endl << endl;
-    // }
-
-    Solution solution = solver.solve(problems[6]);
-    cout << "gap: " << solution.getAbsGap() << endl;
+    for(int i = 0; i < problems.size(); i++){
+        Solution solution = solver.solve(problems[i]);
+        solutions.push_back(solution);
+        cout << "gap: " << solution.getAbsGap() << endl << endl;
 
 
-    
 
 
-    int iVol = 0;
-    vector<Item> items = solution.getItems();
-    for(Item item : items){
-        iVol += item.getVol();
+
+
+        int iVol = 0;
+        vector<Item> items = solution.getItems();
+        for(Item item : items){
+            iVol += item.getVol();
+        }
+
+        vector<Bin> fBins = solution.getFBins();
+        vector<Bin> ufBins = solution.getUFBins();
+
+        int bVol = 0;
+
+        // cout << "\nfilled Bins: " << fBins.size() << endl << endl;
+        for(Bin bin : fBins){
+            // cout << bin.getCap() - bin.getCapLeft() << ", ";
+            bVol += bin.getCap() - bin.getCapLeft();
+        }
+
+        // cout << "\n\nunfilled Bins: " << ufBins.size() << endl << endl;
+        for(Bin bin : ufBins){
+            // cout << bin.getCap() - bin.getCapLeft() << ", ";
+            bVol += bin.getCap() - bin.getCapLeft();
+        }
+
+        // cout << "\niVol: " << iVol << endl; 
+        // cout << "bVol: " << bVol << endl; 
+
+        if(iVol != bVol){
+            cout << "Unmatched sum of items volumns" << endl;
+        }
     }
 
-    vector<Bin> fBins = solution.getFBins();
-    vector<Bin> ufBins = solution.getUFBins();
-
-    int bVol = 0;
-
-    cout << "\nfilled Bins: " << fBins.size() << endl << endl;
-    for(Bin bin : fBins){
-        cout << bin.getCap() - bin.getCapLeft() << ", ";
-        bVol += bin.getCap() - bin.getCapLeft();
-    }
-
-    cout << "\n\nunfilled Bins: " << ufBins.size() << endl << endl;
-    for(Bin bin : ufBins){
-        cout << bin.getCap() - bin.getCapLeft() << ", ";
-        bVol += bin.getCap() - bin.getCapLeft();
-    }
-
-    cout << "\niVol: " << iVol << endl; 
-    cout << "bVol: " << bVol << endl; 
-
+    // Solution solution = solver.solve(problems[6]);
+    // cout << "gap: " << solution.getAbsGap() << endl;
 }
 
 
@@ -750,7 +731,6 @@ string Solver::comb(int n, int k){
 // Function to search the nth neighborhood of the given solution with best descent and get the local optimal solution
 // Nth neighborhood is generated from (n-1)_swap(swap n - 1 items with 1 item)
 Solution Solver::searchNthNB(Solution solution, int n){
-    // testSol(solution);
     // cout << "\nSearch " << n << "th neighborhood" << endl;
 
     // Initialize the local optimal solution
@@ -847,16 +827,6 @@ Solution Solver::searchNthNB(Solution solution, int n){
                         }
                     }
 
-
-
-
-                    // if(k != 2){
-                    //     cout << "remove fail" << endl;
-                    //     cout << "k: " << k << endl;
-                    // }
-
-
-                    
                     // Remove the oItem from oBin
                     oBinCopy.removeItem(oItem);
 
@@ -875,19 +845,15 @@ Solution Solver::searchNthNB(Solution solution, int n){
                     // Push nBinCopy to the corresponding vector
                     if(nBinCopy.getCapLeft() == 0){
                         newFBins.push_back(nBinCopy);
-                        // cout << "push nBinCopy to newFBins" << endl;
                     }else if(nBinCopy.getCapLeft() != nBinCopy.getCap()){
                         newUFBins.push_back(nBinCopy);
-                        // cout << "push nBinCopy to newUFBins" << endl;
                     }
 
                     // Push oBinCopy to the corresponding vector
                     if(oBinCopy.getCapLeft() == 0){
                         newFBins.push_back(oBinCopy);
-                        // cout << "push oBinCopy to newFBins" << endl;
                     }else if(oBinCopy.getCapLeft() != oBinCopy.getCap()){
                         newUFBins.push_back(oBinCopy);
-                        // cout << "push oBinCopy to newUFBins" << endl;
                     }
 
                     curSol.setUFBins(newUFBins);
@@ -898,20 +864,6 @@ Solution Solver::searchNthNB(Solution solution, int n){
 
                     // Update the local optimal solution
                     if(compareSols(curSol, lOptSol)){
-
-                        // cout << "Update the local optimal" << endl;
-                        // cout << "nItemsVol: " << nItemsVol << endl;
-                        // cout << "oItemVol: " << oItemVol << endl;
-                        // cout << "nBin prev cap left: " << nBin.getCapLeft() << endl;
-                        // cout << "oBin prev cap left: " << oBin.getCapLeft() << endl;
-                        // cout << "nBin now cap left: " << nBinCopy.getCapLeft() << endl;
-                        // cout << "oBin now cap left: " << oBinCopy.getCapLeft() << endl;
-
-
-
-                        // testSol(curSol);
-                        // cout << "pre bin num: " << lOptSol.getBinNum() << "; now bin num: " << curSol.getBinNum() << endl;
-                        // cout << "pre obj: " << lOptSol.getObj() << "; now bin num: " << curSol.getObj() << endl;
                         lOptSol = curSol;
                     }
                 }
@@ -1142,28 +1094,12 @@ Solution Solver::VNS(Solution initSol){
 
     int i = 0;
 
-
-
-
-    // testSol(initSol);
-
-
-
-
     // Stopping criteria
     while((double(clock() - start)/CLOCKS_PER_SEC) < maxTime && bestSol.getBinNum() != bestSol.getBinNumLB()){
         // Neighborhood search for intensification
         while(nbCount < NB_NUM){
             // Search the current nbCount th neighborhood with best descent and get the local optimal solution
             Solution lOptSol = searchNthNB(curSol, nbCount);
-
-
-
-            // cout << "Local optimal after nbcount = " << nbCount << endl;
-            // testSol(lOptSol);
-
-
-
 
             // If the local optimal solution is better than the current solution
             // Replace the current solution with the local optimal solution and start again from the new first neighborhood
@@ -1177,9 +1113,6 @@ Solution Solver::VNS(Solution initSol){
         }
         // Update the best solution
         if(compareSols(curSol, bestSol)){
-            // cout << "Update the global optimal" << endl;
-            // cout << "pre bin num: " << bestSol.getBinNum() << "; now bin num: " << curSol.getBinNum() << endl;
-            // cout << "pre obj: " << bestSol.getObj() << "; now bin num: " << curSol.getObj() << endl;
             bestSol = curSol; 
         }
 
@@ -1190,44 +1123,6 @@ Solution Solver::VNS(Solution initSol){
     }
     
     return bestSol;
-}
-
-
-
-
-
-
-
-
-
-
-
-void Solver::testSol(Solution initSol){
-    int iVol = 0;
-    vector<Item> items = initSol.getItems();
-    for(Item item : items){
-        iVol += item.getVol();
-    }
-
-    vector<Bin> fBins = initSol.getFBins();
-    vector<Bin> ufBins = initSol.getUFBins();
-
-    int bVol = 0;
-
-    // cout << "\nfilled Bins: " << fBins.size() << endl << endl;
-    for(Bin bin : fBins){
-        // cout << bin.getCap() - bin.getCapLeft() << ", ";
-        bVol += bin.getCap() - bin.getCapLeft();
-    }
-
-    // cout << "\n\nunfilled Bins: " << ufBins.size() << endl << endl;
-    for(Bin bin : ufBins){
-        // cout << bin.getCap() - bin.getCapLeft() << ", ";
-        bVol += bin.getCap() - bin.getCapLeft();
-    }
-
-    cout << "iVol: " << iVol << endl; 
-    cout << "bVol: " << bVol << endl << endl; 
 }
 
 
