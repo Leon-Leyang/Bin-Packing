@@ -21,6 +21,7 @@ private:
     int vol;
 public:
     // Constructor
+    Item();
     Item(int id, int vol);
 
     // Getters
@@ -202,7 +203,7 @@ private:
     Solution searchNthNB(Solution solution, int count);
 
     // Funtion to shake the solution
-    // Solution shaking(Solution solution);
+    Solution shaking(Solution solution);
 };
 
 
@@ -247,14 +248,14 @@ int main(int argc, char* argv[]){
     vector<Solution> solutions;
 
     // Generate a solution for each problem and push to the solution vector
-    // for(int i = 0; i < problems.size(); i++){
-    //     Solution solution = solver.solve(problems[i]);
-    //     solutions.push_back(solution);
-    //     cout << "gap: " << solution.getAbsGap() << endl << endl;
-    // }
+    for(int i = 0; i < problems.size(); i++){
+        Solution solution = solver.solve(problems[i]);
+        solutions.push_back(solution);
+        cout << "gap: " << solution.getAbsGap() << endl << endl;
+    }
 
-    Solution solution = solver.solve(problems[0]);
-    cout << "gap: " << solution.getAbsGap() << endl;
+    // Solution solution = solver.solve(problems[0]);
+    // cout << "gap: " << solution.getAbsGap() << endl;
 }
 
 
@@ -289,6 +290,7 @@ int main(int argc, char* argv[]){
 
 
 // Constructor for Item
+Item::Item(){}
 Item::Item(int id, int vol){
     this->id = id;
     this->vol = vol;
@@ -804,14 +806,14 @@ Solution Solver::searchNthNB(Solution solution, int n){
                     // Push nBin to the corresponding vector
                     if(nBinCopy.getCapLeft() == 0){
                         newFBins.push_back(nBinCopy);
-                    }else{
+                    }else if(nBinCopy.getCapLeft() != nBinCopy.getCap()){
                         newUFBins.push_back(nBinCopy);
                     }
 
                     // Push oBin to the corresponding vector
                     if(oBinCopy.getCapLeft() == 0){
                         newFBins.push_back(oBinCopy);
-                    }else{
+                    }else if(oBinCopy.getCapLeft() != oBinCopy.getCap()){
                         newUFBins.push_back(oBinCopy);
                     }
 
@@ -838,7 +840,105 @@ Solution Solver::searchNthNB(Solution solution, int n){
 
 // Funtion to shake the solution
 Solution Solver::shaking(Solution solution){
-    Solution solution;  
+
+    // Get the unfilled bins and filled bins
+    vector<Bin> ufBins = solution.getUFBins();
+    vector<Bin> fBins = solution.getFBins();
+
+    // Initialize the vectors of fBins indexes and ufBins indexes
+    vector<int> fIndexes;
+    vector<int> ufIndexes;
+    for(int i = 0; i < fBins.size(); i++){
+        fIndexes.push_back(i);
+    }
+    for(int i = 0; i < ufBins.size(); i++){
+        ufIndexes.push_back(i);
+    }
+
+    bool findTrans = false;
+
+    Bin fBin;
+    Bin ufBin;
+    Item fItem;
+
+    do{
+        // Get a random filled bin
+        int randNum = rand() % fIndexes.size();
+        int fIndex = fIndexes[randNum];
+        fBin = fBins[fIndex];
+        fIndexes.erase(fIndexes.begin() + randNum);
+
+        // Initialize a vector of items indexes in the filled bin
+        vector<int> fItemsIndexes;
+        for(int i = 0; i < fBin.getItems().size(); i++){
+            fItemsIndexes.push_back(i);
+        }
+
+        do{
+            // Get a random item from the filled bin 
+            randNum = rand() % fItemsIndexes.size();
+            int fItemIndex = fItemsIndexes[randNum];
+            fItem = fBin.getItems()[fItemIndex];
+            fItemsIndexes.erase(fItemsIndexes.begin() + randNum);
+
+            
+            do{
+                // Get a random unfilled bin
+                randNum = rand() % ufIndexes.size();
+                int ufIndex = ufIndexes[randNum];
+                ufBin = ufBins[ufIndex];
+                ufIndexes.erase(ufIndexes.begin() + randNum);
+            }while(fItem.getVol() > ufBin.getCapLeft() && ufIndexes.size() > 0);
+
+            // If the unfilled bin is able to pack the item from the filled bin
+            if(fItem.getVol() <= ufBin.getCapLeft()){
+                findTrans = true;
+            }
+
+        }while(findTrans == false && fItemsIndexes.size() > 0);
+
+    }while(findTrans == false && fIndexes.size() > 0);
+
+    if(findTrans == true){
+        fBin.removeItem(fItem);
+        ufBin.addItem(fItem);
+
+        // Erase the fBin from fBins
+        for(int i = 0; i < fBins.size(); i++){
+            if(fBins[i] == fBin){
+                fBins.erase(fBins.begin() + i);
+            }
+        }
+
+        ufBins.push_back(fBin);
+
+        // Erase the ufBin from ufBins
+        for(int i = 0; i < ufBins.size(); i++){
+            if(ufBins[i] == ufBin){
+                ufBins.erase(ufBins.begin() + i);
+            }
+        }
+
+        if(ufBin.getCapLeft() == 0){
+            fBins.push_back(ufBin);
+        }else{
+            ufBins.push_back(ufBin);
+        }
+
+        // cout << "\nShake the solution!" << endl;
+        // cout << "pre obj: " << solution.getObj(); 
+
+        solution.setFBins(fBins);
+        solution.setUFBins(ufBins);
+
+        solution.setObj(eval(solution));
+
+        // cout << "; now obj: " << solution.getObj() << endl;
+
+    }else{
+        // cout << "\nFail to shake the solution!" << endl;
+    }
+    
     return solution;
 }
 
@@ -886,9 +986,11 @@ Solution Solver::VNS(Solution initSol){
         }
 
         // Shaking the current solution for diversification
-        curSol = shaking(curSol);
+        // curSol = shaking(curSol);
+        
+        // nbCount = 1;
     }
-
+    
     return bestSol;
 }
 
