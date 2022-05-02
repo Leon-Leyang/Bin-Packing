@@ -847,13 +847,13 @@ Solution Solver::shaking(Solution solution){
 
     // Initialize the vectors of fBins indexes and ufBins indexes
     vector<int> fIndexes;
-    vector<int> ufIndexes;
+    // vector<int> ufIndexes;
     for(int i = 0; i < fBins.size(); i++){
         fIndexes.push_back(i);
     }
-    for(int i = 0; i < ufBins.size(); i++){
-        ufIndexes.push_back(i);
-    }
+    // for(int i = 0; i < ufBins.size(); i++){
+    //     ufIndexes.push_back(i);
+    // }
 
     bool findTrans = false;
 
@@ -861,43 +861,53 @@ Solution Solver::shaking(Solution solution){
     Bin ufBin;
     Item fItem;
 
-    do{
-        // Get a random filled bin
-        int randNum = rand() % fIndexes.size();
-        int fIndex = fIndexes[randNum];
-        fBin = fBins[fIndex];
-        fIndexes.erase(fIndexes.begin() + randNum);
-
-        // Initialize a vector of items indexes in the filled bin
-        vector<int> fItemsIndexes;
-        for(int i = 0; i < fBin.getItems().size(); i++){
-            fItemsIndexes.push_back(i);
-        }
-
+    if(fIndexes.size() != 0){
         do{
-            // Get a random item from the filled bin 
-            randNum = rand() % fItemsIndexes.size();
-            int fItemIndex = fItemsIndexes[randNum];
-            fItem = fBin.getItems()[fItemIndex];
-            fItemsIndexes.erase(fItemsIndexes.begin() + randNum);
+            // Get a random filled bin
+            // cout << "fIndexes: " << fIndexes.size() << endl;
+            int randNum = rand() % fIndexes.size();
+            int fIndex = fIndexes[randNum];
+            fBin = fBins[fIndex];
+            fIndexes.erase(fIndexes.begin() + randNum);
 
-            
-            do{
-                // Get a random unfilled bin
-                randNum = rand() % ufIndexes.size();
-                int ufIndex = ufIndexes[randNum];
-                ufBin = ufBins[ufIndex];
-                ufIndexes.erase(ufIndexes.begin() + randNum);
-            }while(fItem.getVol() > ufBin.getCapLeft() && ufIndexes.size() > 0);
-
-            // If the unfilled bin is able to pack the item from the filled bin
-            if(fItem.getVol() <= ufBin.getCapLeft()){
-                findTrans = true;
+            // Initialize a vector of items indexes in the filled bin
+            vector<int> fItemsIndexes;
+            for(int i = 0; i < fBin.getItems().size(); i++){
+                fItemsIndexes.push_back(i);
             }
 
-        }while(findTrans == false && fItemsIndexes.size() > 0);
+            do{
+                // Get a random item from the filled bin 
+                // cout << "fItemsIndexes: " << fItemsIndexes.size() << endl;
+                randNum = rand() % fItemsIndexes.size();
+                int fItemIndex = fItemsIndexes[randNum];
+                fItem = fBin.getItems()[fItemIndex];
+                fItemsIndexes.erase(fItemsIndexes.begin() + randNum);
 
-    }while(findTrans == false && fIndexes.size() > 0);
+                vector<int> ufIndexes;
+                for(int i = 0; i < ufBins.size(); i++){
+                    ufIndexes.push_back(i);
+                }
+                do{
+                    // Get a random unfilled bin
+                    // cout << "ufIndexes: " << ufIndexes.size() << endl;
+                    randNum = rand() % ufIndexes.size();
+                    int ufIndex = ufIndexes[randNum];
+                    ufBin = ufBins[ufIndex];
+                    ufIndexes.erase(ufIndexes.begin() + randNum);
+                }while(fItem.getVol() > ufBin.getCapLeft() && ufIndexes.size() > 0);
+
+                // If the unfilled bin is able to pack the item from the filled bin
+                if(fItem.getVol() <= ufBin.getCapLeft()){
+                    findTrans = true;
+                }
+
+            }while(findTrans == false && fItemsIndexes.size() > 0);
+
+        }while(findTrans == false && fIndexes.size() > 0);
+    }else{
+        
+    }
 
     if(findTrans == true){
         fBin.removeItem(fItem);
@@ -945,7 +955,7 @@ Solution Solver::shaking(Solution solution){
 // Function to carry out Variable Neighbourhood Search(VNS)
 Solution Solver::VNS(Solution initSol){
     // Const for the number of neighborhood that VNS use
-    const int NB_NUM = 5;
+    const int NB_NUM = 6;
 
     // Initialize the starting time
     clock_t start;
@@ -986,9 +996,9 @@ Solution Solver::VNS(Solution initSol){
         }
 
         // Shaking the current solution for diversification
-        // curSol = shaking(curSol);
+        curSol = shaking(curSol);
         
-        // nbCount = 1;
+        nbCount = 1;
     }
     
     return bestSol;
