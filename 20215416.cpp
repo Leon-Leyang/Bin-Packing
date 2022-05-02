@@ -50,8 +50,10 @@ public:
     void setCapLeft(int capLeft);
     void setCap(int cap);
     void addItem(Item item);
+    void removeItem(Item item);
 
-
+    // Overload == operator to compare if two bins are the same
+    bool operator ==(const Bin& bin);
 };
 
 // Class for problem
@@ -76,9 +78,7 @@ public:
     void setBinCap(int binCap);
     void setItemNum(int itemNum);
     void setBinNum(int binNum);
-    void addItem(Item item);
-
-    
+    void addItem(Item item);  
 };
 
 // Class for solution
@@ -103,12 +103,16 @@ public:
     int getBinNum() const;
     int getBinNumLB() const;    // Funtion to return the lower bound of the bin number
     int getObj() const;
+    vector<Item> getItems() const;
     vector<Bin> getUFBins() const;
     vector<Bin> getFBins() const;
     void setBinNum(int binNum);
     void setObj(int obj);
     void setUFBins(vector<Bin> ufBins);
     void setFBins(vector<Bin> fBins);
+
+    // Overload = operator to assign a solution to the current solution
+    Solution& operator=(const Solution& solution);
 };
 
 // Class managing io related operations
@@ -191,8 +195,11 @@ private:
     // Funtion to evaluate the objective of a solution
     int eval(Solution solution);
 
+    // Funtion to compare two solutions
+    bool compareSols(Solution solution1, Solution solution2);
+
     // Function to search the nth neighborhood of the given solution with best descent and get the local optimal solution
-    // Solution searchNthNB(Solution solution, int count);
+    Solution searchNthNB(Solution solution, int count);
 
     // Funtion to shake the solution
     // Solution shaking(Solution solution);
@@ -243,10 +250,11 @@ int main(int argc, char* argv[]){
     // for(int i = 0; i < problems.size(); i++){
     //     Solution solution = solver.solve(problems[i]);
     //     solutions.push_back(solution);
-    //     cout << "gap: " << solution.getAbsGap() << endl;
+    //     cout << "gap: " << solution.getAbsGap() << endl << endl;
     // }
 
     Solution solution = solver.solve(problems[0]);
+    cout << "gap: " << solution.getAbsGap() << endl;
 }
 
 
@@ -327,7 +335,21 @@ void Bin::addItem(Item item){
     this->items.push_back(item);
     capLeft -= item.getVol();
 }
+void Bin::removeItem(Item item){
+    auto it = find(items.begin(), items.end(), item);
+    if(it != items.end()){  // If the item is in items
+        int index = it - items.begin();
+        items.erase(items.begin() + index);
+        capLeft += item.getVol();
+    }else{
+        cout << "Fail to find the item to delete!" << endl;
+    }
+}
 
+// Overload == operator to compare if two bins are the same
+bool Bin::operator ==(const Bin& bin){
+        return (this->id == bin.id);
+}
 
 
 // Constructor for Problem
@@ -389,6 +411,9 @@ int Solution::getBinNumLB() const{    // Funtion to return the lower bound of th
 int Solution::getObj() const{
     return obj;
 }
+vector<Item> Solution::getItems() const{
+    return problem.getItems();
+}
 vector<Bin> Solution::getUFBins() const{
     return ufBins;
 }
@@ -410,6 +435,16 @@ void Solution::setFBins(vector<Bin> fBins){
 //Function to calculate the absolute gap between the solution's bin number and optimal
 int Solution::getAbsGap(){
     return binNum - problem.getBinNum();
+}
+
+// Overload = operator to assign a solution to the current solution
+Solution& Solution::operator=(const Solution& solution){
+    this->binNum = solution.binNum;
+    this->obj = solution.obj;
+    this->ufBins = solution.ufBins;
+    this->fBins = solution.fBins;
+
+    return *this;
 }
 
 // Constructor for IOManager
@@ -577,9 +612,7 @@ Solution BFHeuristic::genSolution(const Problem& problem){
 	        ufBins.erase(ufBins.begin() + i);
         }else{// Else sort the unfilled items in an ascending order of capacity left
             sort(ufBins.begin(), ufBins.end(), Heuristic::compareBin);
-        }
-
-        
+        } 
     }
 
     // cout << "Bin num: " << binNum << endl;
@@ -588,6 +621,313 @@ Solution BFHeuristic::genSolution(const Problem& problem){
 
     return solution;
 }
+
+
+
+
+
+
+
+
+// Constructor and destructor
+Solver::Solver(int maxTime){
+    heuristic = new BFHeuristic();
+    this->maxTime = maxTime;
+}
+Solver::~Solver(){
+    delete heuristic;
+}
+
+// Function to solve a problem
+Solution Solver::solve(const Problem& problem){
+    Solution initSol(initSolution(problem));
+    
+    cout << "init gap: " << initSol.getAbsGap() << endl;
+
+    Solution bestSol(VNS(initSol));
+
+    return bestSol;
+}
+
+// Function to initialize a solution with heuristic
+Solution Solver::initSolution(const Problem& problem){
+    Solution initSol = heuristic->genSolution(problem);
+    initSol.setObj(eval(initSol));
+
+    return initSol;
+}
+
+// Funtion to evaluate the objective of a solution
+int Solver::eval(Solution solution){
+    int obj = 0;
+
+    // Get the filled bins and unfilled bins in the solution
+    vector<Bin> fBins = solution.getFBins();
+    vector<Bin> ufBins = solution.getUFBins();
+
+    // For filled bins, add the square of its used capacity(i.e. its capacity)
+    for(Bin bin : fBins){
+        obj += bin.getCap() * bin.getCap();
+    }
+
+    // For unfilled bins, add the square of its used capacity
+    for(Bin bin : ufBins){
+        obj += (bin.getCap() - bin.getCapLeft()) * (bin.getCap() - bin.getCapLeft());
+    }
+
+    return obj;
+}
+
+// Funtion to compare two solutions
+// Return true if solution1 is better than solution2
+bool Solver::compareSols(Solution solution1, Solution solution2){
+    // First compare the bin numbers of two solutions
+    if(solution1.getBinNum() < solution2.getBinNum()){
+        return true;
+    }else if(solution1.getBinNum() > solution2.getBinNum()){
+        return false;
+    }
+
+    // If the two solutions have the same bin number
+    // Compare the objective values
+    if(solution1.getObj() > solution2.getObj()){
+        return true;
+    }else{
+        return false;
+    }
+}
+
+// Function to search the nth neighborhood of the given solution with best descent and get the local optimal solution
+// Nth neighborhood is generated from (n-1)_swap(swap n items with 1 item)
+Solution Solver::searchNthNB(Solution solution, int n){
+    // cout << "\nSearch " << n << "th neighborhood" << endl;
+
+    // Initialize the local optimal solution
+    Solution lOptSol = solution;
+
+    // Get the unfilled bins and filled bins
+    vector<Bin> ufBins = solution.getUFBins();
+    vector<Bin> fBins = solution.getFBins();
+
+    // 
+    for(Bin nBin : ufBins){
+        // Get the items in the bin
+        vector<Item> items = nBin.getItems();
+
+        // Vector to store the (n - 1) items
+        vector<Item> nItems;
+
+        // Make sure the nItems has no item inside
+        nItems.clear();
+
+        // If the number of items in the bin is less than n - 1(i.e. no n-1 items can be selected)
+        // Skip the bin
+        if(items.size() < n - 1){
+            continue;
+        }
+
+        // Select n - 1 items from the bin if it is not 0_swap
+        if(n - 1 != 0){
+            // Generate a vector of indexes
+            vector<int> indexes;
+            for(int i = 0; i < items.size(); i++){
+                indexes.push_back(i);
+            }
+
+            // Generate random index and push the item at the index to nItems
+            for(int i = 0; i < n - 1; i++){
+                int vecSize = indexes.size();
+	            int randNum = rand() % vecSize;
+                int index = indexes[randNum];
+                indexes.erase(indexes.begin() + randNum);
+
+                Item item = items[index];
+                nItems.push_back(item);
+            }
+        }
+
+        // Int to record the total volumn of the (n - 1) items
+        int nItemsVol = 0;
+
+        // If there is item in the nItems
+        // Calculate the total volumn
+        if(n - 1 != 0){
+            for(Item nItem : nItems){
+                nItemsVol += nItem.getVol();
+            }
+        }
+
+
+        
+        for(Bin oBin : ufBins){
+            // If the oBin is the same as the nBin, skip it
+            if(nBin == oBin){
+                continue;
+            }
+
+            // For each item in the oBin
+            // Try to swap it with the (n - 1) items
+            for(Item oItem : oBin.getItems()){
+                int oItemVol = oItem.getVol();
+
+                // If the capacity of both bins will not be violated after the swap, perform the swap and generate a new solution
+                // Otherwise skip it
+                if(oItemVol - nItemsVol <= nBin.getCapLeft() && nItemsVol - oItemVol <= oBin.getCapLeft()){
+                    Solution curSol(solution);
+                    vector<Bin> newUFBins = curSol.getUFBins();
+                    vector<Bin> newFBins = curSol.getFBins();
+
+                    Bin oBinCopy = oBin;
+                    Bin nBinCopy = nBin;
+
+                    // Erase the nBin and oBin from newUFBins
+                    for(int i = 0; i < newUFBins.size(); i++){
+                        if(newUFBins[i] == nBinCopy || newUFBins[i] == oBinCopy){
+                            newUFBins.erase(newUFBins.begin() + i);
+                        }
+                    }
+                    
+                    // Remove the oItem from oBin
+                    oBinCopy.removeItem(oItem);
+
+                    // If nItems is not empty, remove the items from nBin add them to oBin
+                    if(n - 1 != 0){
+                        for(Item nItem : nItems){
+                            nBinCopy.removeItem(nItem);
+                            oBinCopy.addItem(nItem);
+                        }        
+                    }
+
+                    // Add the oItem to nBin
+                    nBinCopy.addItem(oItem);
+
+                    // Push nBin to the corresponding vector
+                    if(nBinCopy.getCapLeft() == 0){
+                        newFBins.push_back(nBinCopy);
+                    }else{
+                        newUFBins.push_back(nBinCopy);
+                    }
+
+                    // Push oBin to the corresponding vector
+                    if(oBinCopy.getCapLeft() == 0){
+                        newFBins.push_back(oBinCopy);
+                    }else{
+                        newUFBins.push_back(oBinCopy);
+                    }
+
+                    curSol.setUFBins(newUFBins);
+                    curSol.setFBins(newFBins);
+
+                    // Evaluate the current solution and set its objective value
+                    curSol.setObj(eval(curSol));
+
+                    // Update the local optimal solution
+                    if(compareSols(curSol, lOptSol)){
+                        // cout << "Update the local optimal" << endl;
+                        // cout << "pre bin num: " << lOptSol.getBinNum() << "; now bin num: " << curSol.getBinNum() << endl;
+                        // cout << "pre obj: " << lOptSol.getObj() << "; now bin num: " << curSol.getObj() << endl;
+                        lOptSol = curSol;
+                    }
+                }
+            }
+        }
+    }
+    
+    return lOptSol;
+}
+
+// Funtion to shake the solution
+Solution Solver::shaking(Solution solution){
+    Solution solution;  
+    return solution;
+}
+
+// Function to carry out Variable Neighbourhood Search(VNS)
+Solution Solver::VNS(Solution initSol){
+    // Const for the number of neighborhood that VNS use
+    const int NB_NUM = 5;
+
+    // Initialize the starting time
+    clock_t start;
+    start = clock();
+
+    // Initialize the current solution and the best solution
+    Solution curSol = initSol;
+    Solution bestSol = initSol;
+
+    // Initialize the neighborhood counter
+    int nbCount = 1;
+
+    int i = 0;
+
+    // Stopping criteria
+    while((double(clock() - start)/CLOCKS_PER_SEC) < maxTime && bestSol.getBinNum() != bestSol.getBinNumLB()){
+        // Neighborhood search for intensification
+        while(nbCount < NB_NUM){
+            // Search the current nbCount th neighborhood with best descent and get the local optimal solution
+            Solution lOptSol = searchNthNB(curSol, nbCount);
+
+            // If the local optimal solution is better than the current solution
+            // Replace the current solution with the local optimal solution and start again from the new first neighborhood
+            if(compareSols(lOptSol, curSol)){
+                curSol = lOptSol;
+                nbCount = 1;
+                continue;
+            }else{
+                nbCount++;
+            }
+        }
+        // Update the best solution
+        if(compareSols(curSol, bestSol)){
+            // cout << "Update the global optimal" << endl;
+            // cout << "pre bin num: " << bestSol.getBinNum() << "; now bin num: " << curSol.getBinNum() << endl;
+            // cout << "pre obj: " << bestSol.getObj() << "; now bin num: " << curSol.getObj() << endl;
+            bestSol = curSol; 
+        }
+
+        // Shaking the current solution for diversification
+        curSol = shaking(curSol);
+    }
+
+    return bestSol;
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 // Function to generate solution with MBS heuristic 
@@ -685,114 +1025,3 @@ Solution BFHeuristic::genSolution(const Problem& problem){
 //         return ret;
 //     }
 // }
-
-
-
-
-
-// Constructor and destructor
-Solver::Solver(int maxTime){
-    heuristic = new BFHeuristic();
-    this->maxTime = maxTime;
-}
-Solver::~Solver(){
-    delete heuristic;
-}
-
-// Function to solve a problem
-Solution Solver::solve(const Problem& problem){
-    Solution initSol(initSolution(problem));
-    
-    Solution bestSol(VNS(initSol));
-
-    return bestSol;
-}
-
-// Function to initialize a solution with heuristic
-Solution Solver::initSolution(const Problem& problem){
-    Solution initSol =  heuristic->genSolution(problem);
-    initSol.setObj(eval(initSol));
-
-    return initSol;
-}
-
-// Funtion to evaluate the objective of a solution
-int Solver::eval(Solution solution){
-    int obj = 0;
-
-    // Get the filled bins and unfilled bins in the solution
-    vector<Bin> fBins = solution.getFBins();
-    vector<Bin> ufBins = solution.getUFBins();
-
-    // For filled bins, add the square of its used capacity(i.e. its capacity)
-    for(Bin bin : fBins){
-        obj += bin.getCap() * bin.getCap();
-    }
-
-    // For unfilled bins, add the square of its used capacity
-    for(Bin bin : ufBins){
-        obj += (bin.getCap() - bin.getCapLeft()) * (bin.getCap() - bin.getCapLeft());
-    }
-
-    return obj;
-}
-
-// Function to search the nth neighborhood of the given solution with best descent and get the local optimal solution
-// Solution Solver::searchNthNB(Solution solution, int count){
-//     Solution solution;
-//     return solution;
-// }
-
-// Funtion to shake the solution
-// Solution Solver::shaking(Solution solution){
-//     Solution solution;  
-//     return solution;
-// }
-
-// Function to carry out Variable Neighbourhood Search(VNS)
-Solution Solver::VNS(Solution initSol){
-    // Const for the number of neighborhood that VNS use
-    const int NB_NUM = 5;
-
-    // Initialize the starting time
-    clock_t start;
-    start = clock();
-
-    // Initialize the current solution and the best solution
-    Solution curSol = initSol;
-    Solution bestSol = initSol;
-
-    // Initialize the neighborhood counter
-    int nbCount = 1;
-
-    int i =0;
-
-    // Stopping criteria
-    // while((double(clock() - start)/CLOCKS_PER_SEC) < maxTime || bestSol.getBinNum() != bestSol.getBinNumLB()){
-    //     // Neighborhood search for intensification
-    //     while(nbCount < NB_NUM){
-    //         // Search the current nbCount th neighborhood with best descent and get the local optimal solution
-    //         Solution lOptSol = searchNthNB(curSol, nbCount);
-
-    //         // If the local optimal solution is better than the current solution
-    //         // Replace the current solution with the local optimal solution and start again from the new first neighborhood
-    //         if(lOptSol.getObj() > curSol.getObj()){
-    //             curSol = lOptSol;
-    //             nbCount = 1;
-    //             continue;
-    //         }else{
-    //             nbCount++;
-    //         }
-    //     }
-
-    //     // Update the best solution
-    //     if(curSol.getObj() > bestSol.getObj()){
-    //         bestSol = curSol;
-    //     }
-
-    //     // Shaking the current solution for diversification
-    //     curSol = shaking(curSol);
-    // }
-
-    return bestSol;
-}
