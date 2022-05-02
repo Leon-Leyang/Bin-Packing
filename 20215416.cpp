@@ -106,6 +106,7 @@ public:
     vector<Bin> getUFBins() const;
     vector<Bin> getFBins() const;
     void setBinNum(int binNum);
+    void setObj(int obj);
     void setUFBins(vector<Bin> ufBins);
     void setFBins(vector<Bin> fBins);
 };
@@ -186,6 +187,15 @@ private:
 
     // Function to carry out Variable Neighbourhood Search(VNS)
     Solution VNS(Solution initSol);
+
+    // Funtion to evaluate the objective of a solution
+    int eval(Solution solution);
+
+    // Function to search the nth neighborhood of the given solution with best descent and get the local optimal solution
+    // Solution searchNthNB(Solution solution, int count);
+
+    // Funtion to shake the solution
+    // Solution shaking(Solution solution);
 };
 
 
@@ -230,13 +240,13 @@ int main(int argc, char* argv[]){
     vector<Solution> solutions;
 
     // Generate a solution for each problem and push to the solution vector
-    for(int i = 0; i < problems.size(); i++){
-        Solution solution = solver.solve(problems[i]);
-        solutions.push_back(solution);
-        cout << "gap: " << solution.getAbsGap() << endl;
-    }
+    // for(int i = 0; i < problems.size(); i++){
+    //     Solution solution = solver.solve(problems[i]);
+    //     solutions.push_back(solution);
+    //     cout << "gap: " << solution.getAbsGap() << endl;
+    // }
 
-    // Solution solution = solver.solve(problems[0]);
+    Solution solution = solver.solve(problems[0]);
 }
 
 
@@ -373,7 +383,7 @@ Solution::Solution(const Solution& solution): problem(solution.problem){
 int Solution::getBinNum() const{
     return binNum;
 }
-int Solution::getBinNumLB const{    // Funtion to return the lower bound of the bin number
+int Solution::getBinNumLB() const{    // Funtion to return the lower bound of the bin number
     return problem.getBinNumLB();
 }
 int Solution::getObj() const{
@@ -384,6 +394,9 @@ vector<Bin> Solution::getUFBins() const{
 }
 vector<Bin> Solution::getFBins() const{
     return fBins;
+}
+void Solution::setObj(int obj){
+    this->obj = obj;
 }
 void Solution::setUFBins(vector<Bin> ufBins){
     this->ufBins = ufBins;
@@ -697,13 +710,49 @@ Solution Solver::solve(const Problem& problem){
 
 // Function to initialize a solution with heuristic
 Solution Solver::initSolution(const Problem& problem){
-    return heuristic->genSolution(problem);
+    Solution initSol =  heuristic->genSolution(problem);
+    initSol.setObj(eval(initSol));
+
+    return initSol;
 }
+
+// Funtion to evaluate the objective of a solution
+int Solver::eval(Solution solution){
+    int obj = 0;
+
+    // Get the filled bins and unfilled bins in the solution
+    vector<Bin> fBins = solution.getFBins();
+    vector<Bin> ufBins = solution.getUFBins();
+
+    // For filled bins, add the square of its used capacity(i.e. its capacity)
+    for(Bin bin : fBins){
+        obj += bin.getCap() * bin.getCap();
+    }
+
+    // For unfilled bins, add the square of its used capacity
+    for(Bin bin : ufBins){
+        obj += (bin.getCap() - bin.getCapLeft()) * (bin.getCap() - bin.getCapLeft());
+    }
+
+    return obj;
+}
+
+// Function to search the nth neighborhood of the given solution with best descent and get the local optimal solution
+// Solution Solver::searchNthNB(Solution solution, int count){
+//     Solution solution;
+//     return solution;
+// }
+
+// Funtion to shake the solution
+// Solution Solver::shaking(Solution solution){
+//     Solution solution;  
+//     return solution;
+// }
 
 // Function to carry out Variable Neighbourhood Search(VNS)
 Solution Solver::VNS(Solution initSol){
     // Const for the number of neighborhood that VNS use
-    const int NB_NUM = 20;
+    const int NB_NUM = 5;
 
     // Initialize the starting time
     clock_t start;
@@ -719,31 +768,31 @@ Solution Solver::VNS(Solution initSol){
     int i =0;
 
     // Stopping criteria
-    while((double(clock() - start)/CLOCKS_PER_SEC) < maxTime || bestSol.getBinNum() != bestSol.getBinNumLB()){
-        // Neighborhood search for intensification
-        while(nbCount < NB_NUM){
-            // Search the current nbCount th neighborhood with best descent and get the local optimal solution
-            Solution lOptSol = bestDes(getNthNb(curSol, nbCount));
+    // while((double(clock() - start)/CLOCKS_PER_SEC) < maxTime || bestSol.getBinNum() != bestSol.getBinNumLB()){
+    //     // Neighborhood search for intensification
+    //     while(nbCount < NB_NUM){
+    //         // Search the current nbCount th neighborhood with best descent and get the local optimal solution
+    //         Solution lOptSol = searchNthNB(curSol, nbCount);
 
-            // If the local optimal solution is better than the current solution
-            // Replace the current solution with the local optimal solution and start again from the new first neighborhood
-            if(lOptSol.getObj() > curSol.getObj()){
-                curSol = lOptSol;
-                nbCount = 1;
-                continue;
-            }else{
-                nbCount++;
-            }
-        }
+    //         // If the local optimal solution is better than the current solution
+    //         // Replace the current solution with the local optimal solution and start again from the new first neighborhood
+    //         if(lOptSol.getObj() > curSol.getObj()){
+    //             curSol = lOptSol;
+    //             nbCount = 1;
+    //             continue;
+    //         }else{
+    //             nbCount++;
+    //         }
+    //     }
 
-        // Update the best solution
-        if(curSol.getObj() > bestSol.getObj()){
-            bestSol = curSol;
-        }
+    //     // Update the best solution
+    //     if(curSol.getObj() > bestSol.getObj()){
+    //         bestSol = curSol;
+    //     }
 
-        // Shaking the current solution for diversification
-        curSol = shaking(curSol);
-    }
+    //     // Shaking the current solution for diversification
+    //     curSol = shaking(curSol);
+    // }
 
     return bestSol;
 }
