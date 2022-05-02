@@ -6,6 +6,7 @@
 #include <fstream>
 #include <sstream>
 #include <map>
+#include <cmath>
 #include <time.h>
 
 using namespace std;
@@ -70,11 +71,14 @@ public:
     int getBinCap() const;
     int getItemNum() const;
     int getBinNum() const;
+    int getBinNumLB() const;    // Funtion to return the lower bound of the bin number
     vector<Item> getItems() const;
     void setBinCap(int binCap);
     void setItemNum(int itemNum);
     void setBinNum(int binNum);
     void addItem(Item item);
+
+    
 };
 
 // Class for solution
@@ -97,6 +101,8 @@ public:
 
     // Getters and setters
     int getBinNum() const;
+    int getBinNumLB() const;    // Funtion to return the lower bound of the bin number
+    int getObj() const;
     vector<Bin> getUFBins() const;
     vector<Bin> getFBins() const;
     void setBinNum(int binNum);
@@ -224,13 +230,13 @@ int main(int argc, char* argv[]){
     vector<Solution> solutions;
 
     // Generate a solution for each problem and push to the solution vector
-    // for(int i = 0; i < problems.size(); i++){
-    //     Solution solution = solver.solve(problems[i]);
-    //     solutions.push_back(solution);
-    //     cout << "gap: " << solution.getAbsGap() << endl;
-    // }
+    for(int i = 0; i < problems.size(); i++){
+        Solution solution = solver.solve(problems[i]);
+        solutions.push_back(solution);
+        cout << "gap: " << solution.getAbsGap() << endl;
+    }
 
-    Solution solution = solver.solve(problems[0]);
+    // Solution solution = solver.solve(problems[0]);
 }
 
 
@@ -329,6 +335,15 @@ int Problem::getItemNum() const{
 int Problem::getBinNum() const{
     return binNum;
 }
+int Problem::getBinNumLB() const{    // Funtion to return the lower bound of the bin number
+    int sumVol = 0;
+    for(Item item : items){
+        sumVol += item.getVol();
+    }
+    float num = static_cast< float > (sumVol) / binCap;
+    int binNumLB = ceil(num);
+    return binNumLB;
+}    
 vector<Item> Problem::getItems() const{
     return items;
 }
@@ -357,6 +372,12 @@ Solution::Solution(const Solution& solution): problem(solution.problem){
 // Getters and setters
 int Solution::getBinNum() const{
     return binNum;
+}
+int Solution::getBinNumLB const{    // Funtion to return the lower bound of the bin number
+    return problem.getBinNumLB();
+}
+int Solution::getObj() const{
+    return obj;
 }
 vector<Bin> Solution::getUFBins() const{
     return ufBins;
@@ -681,6 +702,9 @@ Solution Solver::initSolution(const Problem& problem){
 
 // Function to carry out Variable Neighbourhood Search(VNS)
 Solution Solver::VNS(Solution initSol){
+    // Const for the number of neighborhood that VNS use
+    const int NB_NUM = 20;
+
     // Initialize the starting time
     clock_t start;
     start = clock();
@@ -689,11 +713,36 @@ Solution Solver::VNS(Solution initSol){
     Solution curSol = initSol;
     Solution bestSol = initSol;
 
-    // Initialize the neighborhood number
-    int neighborhoodNum = 1;
+    // Initialize the neighborhood counter
+    int nbCount = 1;
 
-    while((double(clock() - start)/CLOCKS_PER_SEC) < maxTime){
-        cout << "pass" <<endl;
+    int i =0;
+
+    // Stopping criteria
+    while((double(clock() - start)/CLOCKS_PER_SEC) < maxTime || bestSol.getBinNum() != bestSol.getBinNumLB()){
+        // Neighborhood search for intensification
+        while(nbCount < NB_NUM){
+            // Search the current nbCount th neighborhood with best descent and get the local optimal solution
+            Solution lOptSol = bestDes(getNthNb(curSol, nbCount));
+
+            // If the local optimal solution is better than the current solution
+            // Replace the current solution with the local optimal solution and start again from the new first neighborhood
+            if(lOptSol.getObj() > curSol.getObj()){
+                curSol = lOptSol;
+                nbCount = 1;
+                continue;
+            }else{
+                nbCount++;
+            }
+        }
+
+        // Update the best solution
+        if(curSol.getObj() > bestSol.getObj()){
+            bestSol = curSol;
+        }
+
+        // Shaking the current solution for diversification
+        curSol = shaking(curSol);
     }
 
     return bestSol;
